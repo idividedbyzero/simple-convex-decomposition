@@ -1,7 +1,3 @@
-import pygame
-import pygamedraw
-import vintersect
-import numpy as np
 import vmath
 import vector
 
