@@ -75,7 +75,15 @@ def solve_linear_system(small_G, RHS):
         RHS = np.reshape(RHS, (1,))  # Reshape RHS to a 1D array
     return np.linalg.solve(small_G, RHS)
 
-def project(x: np.ndarray, coeffs: List[tuple])->OptimizeResult:
+def project_convex(x: np.ndarray, coeffs: List[tuple])->OptimizeResult:
+    """Solves the quadtratic Programming min_v |x-v| s.t. <a_i,v><=b_i
+    Args:
+        x (np.ndarray): Vector to project
+        coeffs (List[tuple]): List of tuples of the form (a_i, b_i) where a_i is a 2D vector and b_i a float
+
+    Returns:
+        OptimizeResult: Solution of scipy minimize. OptimizeResult.x contains the optimal vector.
+    """
     a_s = np.array([_c[0] for _c in coeffs])
     b_s = np.array([_c[1] for _c in coeffs])
     lc=LinearConstraint(a_s, ub=b_s)
@@ -106,10 +114,10 @@ def project(x: np.ndarray, coeffs: List[tuple])->OptimizeResult:
 if __name__=="__main__":
     # Define the polygon vertices
     #vertices = np.array([[0, 0], [0, 5], [10, 5], [5, 2], [10, 0], [0, 0]])
-    x=np.array([-10,-10])
+    x=np.array([10, 10])
     vertices = np.array([[0,0], [0, 5], [5, 0], [0,0]])
     coeffs=from_vertices_to_constraints(vertices, False)
-    sol=project(x, coeffs)
+    sol=project_convex(x, coeffs)
 
     
     plt.figure(figsize=(6, 6))
