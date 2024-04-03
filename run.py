@@ -55,6 +55,7 @@ def making_polygon() -> polygon.Polygon | pygame.QUIT:
                     
                     # continue by returning drawn polygon
                     else:
+                        np.save("drawn_array", np.array([p.to_float_list() for p in point_array]))
                         return p
         
         screen.fill(bg_color)
@@ -120,6 +121,7 @@ def main():
         if displaying_polygon(res, cpg) == pygame.QUIT:
             return
         
+if __name__=="__main__":
 
-main()
-pygame.quit()
+    main()
+    pygame.quit()
