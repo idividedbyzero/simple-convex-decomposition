@@ -3,8 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from typing import List
 from scipy.optimize import LinearConstraint, minimize, OptimizeResult
-
-
+import pygame
+from run import making_polygon
+import polygon
+import polygontransform
 
 import itertools
 
@@ -87,7 +89,7 @@ def project_convex(x: np.ndarray, coeffs: List[tuple])->OptimizeResult:
     a_s = np.array([_c[0] for _c in coeffs])
     b_s = np.array([_c[1] for _c in coeffs])
     lc=LinearConstraint(a_s, ub=b_s)
-    loss=lambda v: 1/2*np.linalg.norm(x-v, ord=2)
+    loss=lambda v: 1/2*np.linalg.norm(x-v, ord=2)**2
     return minimize(loss, x, constraints=lc)
     #Using the paper: https://arxiv.org/pdf/1607.00102.pdf
     #TODO if necessary for banach spaces...still not working e.g for [-10, 1]
@@ -111,22 +113,45 @@ def project_convex(x: np.ndarray, coeffs: List[tuple])->OptimizeResult:
     #         return diff
     # raise Exception("There must be at least one index set, satisfying the equations")
 
+def project_polygon(x: np.ndarray, poly: polygon.Polygon, show:bool=True)->np.ndarray:
+    cpg = polygon.ConvexPolygonsGroup(polygon.SimplePolygon(poly))
+    #TODO in order to make this work one requires, to check if the polygon were made in the correct order
+    p = polygontransform.ConvexPolygonGroup(cpg).poly_array
+    coords=[np.array([e.pos.to_float_list() for e in  p_.p.vector_array]) for p_ in p]
+    distances=np.zeros(len(coords))
+    sols=[]
+    for c_, vertices in enumerate(coords):
+        if not np.array_equal(vertices[0], vertices[-1]):
+            vertices=np.vstack([vertices, vertices[0]])
+        coeffs=from_vertices_to_constraints(vertices, False)
+        sol=project_convex(x, coeffs)
+        sols.append(sol.x)
+        distances[c_]=np.linalg.norm(x-sol.x)
+    projected=sols[np.argmin(distances)]
+    if show:
+        plt.figure()
+        plt.scatter(x[0], x[1])
+        plt.scatter(projected[0], projected[1])
+        for vertices in coords:            
+            plt.plot(vertices[:, 0], vertices[:, 1])
+            plt.fill(vertices[:, 0], vertices[:, 1], alpha=0.5)
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Triangle Plot')
+        plt.grid(True)
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()
+    return projected
+    
+    
+    
+
+
 if __name__=="__main__":
     # Define the polygon vertices
     #vertices = np.array([[0, 0], [0, 5], [10, 5], [5, 2], [10, 0], [0, 0]])
-    x=np.array([10, 10])
-    vertices = np.array([[0,0], [0, 5], [5, 0], [0,0]])
-    coeffs=from_vertices_to_constraints(vertices, False)
-    sol=project_convex(x, coeffs)
+    x=np.array([0,0])    
+    res = making_polygon()
+    print(project_polygon(x, res))
 
     
-    plt.figure(figsize=(6, 6))
-    plt.scatter(x[0], x[1])
-    plt.scatter(sol.x[0], sol.x[1])
-    plt.plot(vertices[:, 0], vertices[:, 1], color='blue')
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('Projection')
-    plt.grid(True)
-    plt.gca().set_aspect('equal', adjustable='box')
-    plt.show()
